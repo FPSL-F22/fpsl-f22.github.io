@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+
+	<title>Lab 01. Scala and sbt basics</title>
+
+	<meta name="description" content="Lab 01. Scala and sbt basics">
+	<meta name="author" content="Artem Bakhanov">
+
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="/dist/reset.css">
+	<link rel="stylesheet" href="/dist/reveal.css">
+	<link rel="stylesheet" href="/dist/theme/black.css" id="theme">
+
+	<!-- Theme used for syntax highlighting of code -->
+	<link rel="stylesheet" href="/plugin/highlight/monokai.css">
+</head>
+
+<body>
+
+	<div class="reveal">
+		<div class="slides">
+			<section data-markdown>
+				## Introduction to FP and Scala
+				### Lab 01
+
+				Artem Bakhanov
+			</section>
+			<section>
+				<section data-markdown>
+					<script type="text/template">
+						## Labs information
+	
+						* Each lab you receive one or several assignments. In addition you also get tasks on lectures. The deadline is usually until the next lab. <!-- .element: class="fragment" style="text-align: left;" -->
+						* Labs cost 20% of your course grade. <!-- .element: class="fragment" style="text-align: left;"-->
+						* Attendance is not graded. <!-- .element: class="fragment" style="text-align: left;"-->
+						* Lab assignments must be submitted to Github (we will talk about the process later). <!-- .element: class="fragment" style="text-align: left;" -->
+						* Lecture tasks will be submitted to Moodle separately. <!-- .element: class="fragment" style="text-align: left;" -->
+					  </script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## Project
+
+						* Approximately from the middle of the course you will start doing projects. <!-- .element: class="fragment" style="text-align: left;"-->
+						* The project costs 40% of your course grade. <!-- .element: class="fragment" style="text-align: left;"-->
+						* You can work in teams up of to two people. <!-- .element: class="fragment" style="text-align: left;"-->
+						* Clear work distribution is required. Each team member must be able to explain what was their part. <!-- .element: class="fragment" style="text-align: left;"-->
+						* It can be a server, full-stack application, telegram bot, contribution to an open-source project or anything else but the main requirement is to use modern FP frameworks. <!-- .element: class="fragment" style="text-align: left;"-->
+						* More details and specifications are TBD. <!-- .element: class="fragment" style="text-align: left;"-->
+					  </script>
+				</section>
+			</section>
+			
+			<section>
+				<section data-markdown>
+					<script type="text/template">
+						## IDE
+						
+						On the lecture you have been asked to install everything needed to start developing in Scala. <!-- .element: class="fragment" style="text-align: left;" -->
+						
+						You can use anything you want ranging from Intellij IDEA to custom such as VIM. <!-- .element: class="fragment" style="text-align: left;" -->
+						
+						I recommend the following two: <!-- .element: class="fragment" style="text-align: left;" -->
+
+						* Intellij IDEA <!-- .element: class="fragment" style="text-align: left;" -->
+						* VS Code <!-- .element: class="fragment" style="text-align: left;" -->
+					</script>
+				</section>
+				
+				<section data-markdown>
+					<script type="text/template">
+						## Intellij IDEA
+						
+						In my opinion, pros: <!-- .element: class="fragment" style="text-align: left;" -->
+						* Install and use, simple and easy <!-- .element: class="fragment" style="text-align: left;" -->
+						* The most stable IDE for Scala <!-- .element: class="fragment" style="text-align: left;" -->
+						* Provides debugger, profiler and other tools <!-- .element: class="fragment" style="text-align: left;" -->
+
+						Cons: <!-- .element: class="fragment" style="text-align: left;" -->
+						* Consumes a lot of resources, may be very slow especially on old machines & big projects  <!-- .element: class="fragment" style="text-align: left;" --> 
+						* Not an excellent support of Scala 3 <!-- .element: class="fragment" style="text-align: left;" --> 
+
+						[Install Intellij IDEA with Scala](https://www.jetbrains.com/help/idea/discover-intellij-idea-for-scala.html#scala_plugin) <!-- .element: class="fragment" --> 
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## VS Code (+ Metals)
+
+						My favourite
+						
+						Pros: <!-- .element: class="fragment" style="text-align: left;" -->
+						* Support of extensions and a great languages integration  <!-- .element: class="fragment" style="text-align: left;" -->
+						* Ligthweight  <!-- .element: class="fragment" style="text-align: left;" -->
+						* Fast compilation  <!-- .element: class="fragment" style="text-align: left;" -->
+
+						Cons: <!-- .element: class="fragment" style="text-align: left;" -->
+						* Sometimes very unstable, you may often need to restart build server  <!-- .element: class="fragment" style="text-align: left;" --> 
+						* Strange debugger, hard-to-use profiler  <!-- .element: class="fragment" style="text-align: left;" --> 
+						* Need to configure a lot  <!-- .element: class="fragment" style="text-align: left;" --> 
+
+						[Install VS Code with Scala](https://marketplace.visualstudio.com/items?itemName=scalameta.metals) <!-- .element: class="fragment" style="text-align: left;" --> 
+
+
+					</script>
+				</section>
+				<section data-markdown>
+					If you want stability, install Intellij IDEA. <!-- .element: class="fragment" style="text-align: left;" --> 
+
+					If you like open source software and want to work with Scala 3 or your computer is not powerful enough for Intellij IDEA, install VS Code + Metals <!-- .element: class="fragment" style="text-align: left;" --> 
+
+					[Other options](https://devm.io/programming/top-5-ides-scala-147093) <!-- .element: class="fragment" style="text-align: left;" --> 
+				</section>
+			</section>
+			<section>
+				<section data-markdown>
+					<script type="text/template">
+						## SBT: ~~Simple~~ Scala build tool
+
+						Build tool *mainly* for Scala, Java (also, C and C++, but shhh!) <!-- .element: class="fragment" style="text-align: left;" -->
+
+						#### Main features <!-- .element: class="fragment" style="text-align: left;" -->
+						* Based on Scala with its own types <!-- .element: class="fragment" style="text-align: left;" -->
+						* Incremental compile <!-- .element: class="fragment" style="text-align: left;" -->
+						* Continuous compilation and testing ([link](https://www.scala-sbt.org/1.x/docs/Triggered-Execution.html)) <!-- .element: class="fragment" style="text-align: left;" -->
+						* [Testing](https://www.scala-sbt.org/1.x/docs/Testing.html), [REPL](https://docs.scala-lang.org/overviews/repl/overview.html), [modularization](https://www.scala-sbt.org/1.x/docs/Multi-Project.html) and many more <!-- .element: class="fragment" style="text-align: left;" -->
+						
+					</script>
+				</section>
+			</section>
+		</div>
+	</div>
+
+	<script src="/dist/reveal.js"></script>
+	<script src="/plugin/zoom/zoom.js"></script>
+	<script src="/plugin/notes/notes.js"></script>
+	<script src="/plugin/search/search.js"></script>
+	<script src="/plugin/markdown/markdown.js"></script>
+	<script src="/plugin/highlight/highlight.js"></script>
+	<script>
+
+		// Also available as an ES module, see:
+		// https://revealjs.com/initialization/
+		Reveal.initialize({
+			controls: true,
+			progress: true,
+			center: true,
+			hash: true,
+			minScale: 0.1,
+    		maxScale: 0.9,
+
+			// Learn about plugins: https://revealjs.com/plugins/
+			plugins: [RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight]
+		});
+	</script>
+
+</body>
+
+</html>
