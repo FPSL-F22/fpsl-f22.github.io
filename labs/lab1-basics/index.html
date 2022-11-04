@@ -35,6 +35,22 @@
 			<section>
 				<section data-markdown>
 					<script type="text/template">
+						## Who am I?
+
+						* A former student @ Inno <!-- .element: class="fragment" style="text-align: left;"-->
+						* Scala developer at Tinkoff, Investment Systems <!-- .element: class="fragment" style="text-align: left;"-->
+						* However I am not doing anything related to investments <!-- .element: class="fragment" style="text-align: left;"-->
+						* Web-application for internal usage (but maybe we will start selling it) <!-- .element: class="fragment" style="text-align: left;"-->
+						* Scala 3, ZIO 2, Korolev <!-- .element: class="fragment" style="text-align: left;"-->
+					</script>
+				</section>
+				<section data-markdown>
+					Your turn:)
+				</section>
+			</section>
+			<section>
+				<section data-markdown>
+					<script type="text/template">
 						## Labs information
 	
 						* Each lab you receive one or several assignments. In addition you also get tasks on lectures. The deadline is usually until the next lab. <!-- .element: class="fragment" style="text-align: left;" -->
@@ -58,7 +74,7 @@
 					  </script>
 				</section>
 			</section>
-			
+
 			<section>
 				<section data-markdown>
 					<script type="text/template">
@@ -74,7 +90,7 @@
 						* VS Code <!-- .element: class="fragment" style="text-align: left;" -->
 					</script>
 				</section>
-				
+
 				<section data-markdown>
 					<script type="text/template">
 						## Intellij IDEA
@@ -114,11 +130,15 @@
 					</script>
 				</section>
 				<section data-markdown>
-					If you want stability, install Intellij IDEA. <!-- .element: class="fragment" style="text-align: left;" --> 
+					If you want stability, install Intellij IDEA.
+					<!-- .element: class="fragment" style="text-align: left;" -->
 
-					If you like open source software and want to work with Scala 3 or your computer is not powerful enough for Intellij IDEA, install VS Code + Metals <!-- .element: class="fragment" style="text-align: left;" --> 
+					If you like open source software and want to work with Scala 3 or your computer is not powerful
+					enough for Intellij IDEA, install VS Code + Metals
+					<!-- .element: class="fragment" style="text-align: left;" -->
 
-					[Other options](https://devm.io/programming/top-5-ides-scala-147093) <!-- .element: class="fragment" style="text-align: left;" --> 
+					[Other options](https://devm.io/programming/top-5-ides-scala-147093)
+					<!-- .element: class="fragment" style="text-align: left;" -->
 				</section>
 			</section>
 			<section>
@@ -126,15 +146,362 @@
 					<script type="text/template">
 						## SBT: ~~Simple~~ Scala build tool
 
-						Build tool *mainly* for Scala, Java (also, C and C++, but shhh!) <!-- .element: class="fragment" style="text-align: left;" -->
+						Build tool *mainly* for Scala, Java (also, C and C++, but shhh!) 
 
-						#### Main features <!-- .element: class="fragment" style="text-align: left;" -->
-						* Based on Scala with its own types <!-- .element: class="fragment" style="text-align: left;" -->
-						* Incremental compile <!-- .element: class="fragment" style="text-align: left;" -->
-						* Continuous compilation and testing ([link](https://www.scala-sbt.org/1.x/docs/Triggered-Execution.html)) <!-- .element: class="fragment" style="text-align: left;" -->
-						* [Testing](https://www.scala-sbt.org/1.x/docs/Testing.html), [REPL](https://docs.scala-lang.org/overviews/repl/overview.html), [modularization](https://www.scala-sbt.org/1.x/docs/Multi-Project.html) and many more <!-- .element: class="fragment" style="text-align: left;" -->
+						#### Main features 
+						* Based on Scala with its own types 
+						* Incremental compile 
+						* Continuous compilation and testing ([link](https://www.scala-sbt.org/1.x/docs/Triggered-Execution.html)) 
+						* [Testing](https://www.scala-sbt.org/1.x/docs/Testing.html), [REPL](https://docs.scala-lang.org/overviews/repl/overview.html), [modularization](https://www.scala-sbt.org/1.x/docs/Multi-Project.html) and many more 
 						
 					</script>
+				</section>
+
+				<section data-markdown>
+					## Basic commands
+					```console [1-13|1-2|3-5|6|7-10|11-12|13]
+					~ sbt # start sbt shell
+					sbt:artembakhanov> exit # exit from sbt shell
+					sbt:artembakhanov> compile # compile a project
+					sbt:artembakhanov> run # run your project
+					sbt:artembakhanov> test # run tests
+					sbt:artembakhanov> reload # reload the build (sbt file, plugins or other changes)
+					sbt:artembakhanov> console # run REPL
+					sbt:artembakhanov> consoleQuick # run REPL without loading project files
+					scala> :paste # paste code
+					scala> :help # help in REPL mode
+					sbt:artembakhanov> projects # list all projects
+					sbt:artembakhanov> project <name> # switch to another project
+					sbt:artembakhanov> Docker/publishLocal # dockerize app with sbt-native-packager
+					```
+
+					You can also make commands run continuosly (on file changes) via prefixing a command with `~`
+
+					```console
+					sbt:artembakhanov> ~compile # compile on changes
+					```
+				</section>
+
+				<section data-markdown>
+					## Build files
+					### build.sbt
+					This file describes how your project will be built.
+
+					It consists of a bunch of projects (subprojects) that have their own configuration (tasks,
+					dependencies, etc).
+
+					```scala
+					scalaVersion := "3.2.0"
+					name := "hello"
+					version := "6.9"
+					organization := "net.cringe"
+					licenses += "GPLv2" -> url("https://www.gnu.org/licenses/gpl-2.0.html")
+
+					libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.7" % Test,
+					```
+				</section>
+				<section data-markdown>
+					## Modular approach
+					```scala
+					ThisBuild / scalaVersion := "3.2.0"
+					ThisBuild / organization := "net.cringe"
+
+					lazy val hello = (project in file("."))
+						.settings(
+							name := "Hello",
+							libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.7" % Test,
+						)
+					```
+				</section>
+				<section data-markdown>
+					## Two subprojects
+					```scala
+					ThisBuild / scalaVersion := "3.2.0"
+					ThisBuild / organization := "net.cringe"
+
+					val scalaTest = "org.scalatest" %% "scalatest" % "3.2.7"
+
+					lazy val hello = (project in file("."))
+						.settings(
+							name := "Hello",
+							libraryDependencies += scalaTest % Test,
+						)
+
+					lazy val helloCore = (project in file("core"))
+						.settings(
+							name := "Hello Core",
+							libraryDependencies += scalaTest % Test,
+						)
+					```
+				</section>
+
+				<section data-markdown>
+					## ??
+					Sequence of key-value pairs in `.settings(...)` are called setting expression defined by build.sbt
+					domain specific language.
+
+					They have a key, operator and the body (value).
+
+					```scala
+					name := "Hello Core"
+					```
+
+					Remember that it is Scala?
+
+					```scala
+					lazy val root = (project in file("."))
+						.settings(
+							name := 42 // will not compile
+						)
+					```
+				</section>
+
+				<section data-markdown>
+					## Dependencies management
+					To add new dependencies to project one should use sbt settings key `libraryDependencies`.
+
+					A dependency value consists of:
+					* groupId (organization)
+					* artifactId
+					* revision (version)
+					* configuration (optional), e.g. Test which adds only code from dependency test module
+				</section>
+
+				<section data-markdown>
+					You can add Maven dependencies like this, but a problem arises with Scala specific dependencies.
+
+					Since Scala has different version, most of which do not have backward compatability, library
+					publisher should provide sources for each scala major version: 2.12, 2.13
+
+					sbt can automatically fetch dependency for your project's Scala version by specifying a dependency
+					value like:
+					`libraryDependency += "groupId % artifactId %% revision"`
+
+					```scala
+					libraryDependencies += "org.scala-stm" % "scala-stm_2.13" % "0.9.1"
+					```
+					and
+					```scala
+					libraryDependencies += "org.scala-stm" %% "scala-stm" % "0.9.1"
+					```
+					are identical for Scala versions 2.13
+				</section>
+
+				<section data-markdown>
+					### Plugins
+					* Plugins define a sequence of sbt settings or tasks that are automatically added to all projects or
+					that are explicitly declared for selected projects. Plugins should be added to `project/plugins.sbt`
+					file
+					* Useful plugins:
+					1. [scalafmt](https://scalameta.org/scalafmt/) - allows to specify code formatting settings as a
+					configuration file
+					2. [Scalafix](https://scalacenter.github.io/scalafix/) - refactoring and linting tool for Scala
+					2. [sbt-dependency-graph](https://index.scala-lang.org/hammerlab/sbt-dependency-graph) - allows to
+					browse dependency graph of the project and find deps which version conflicts and overrides one
+					another
+
+					```scala
+					// project/plugins.sbt
+					addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.34")
+					```
+				</section>
+				<section data-markdown>
+					Some plugins do not change the build but rather provide some useful information like
+					sbt-dependency-graph. You can enable such plugins globally for all sbt projects.
+					```scala
+					// ~/.sbt/1.0/plugins/plugins.sbt
+					addSbtPlugin("org.hammerlab" % "sbt-dependency-graph" % "0.10.2")
+					```
+				</section>
+
+				<section data-markdown>
+					## Build organization
+					Almost always you want to have an organized build not just everything in build.sbt. Subfolder
+					`/project` allows you to that.
+
+					This is another build that knows how to build your main build.
+				</section>
+
+				<section data-markdown>
+					`project/Dependencies.scala`
+					```scala
+					import sbt._
+
+					object Dependencies {
+					// Versions
+					lazy val akkaVersion = "2.6.19"
+
+					// Libraries
+					val akkaActor = "com.typesafe.akka" %% "akka-actor" % akkaVersion
+					val akkaCluster = "com.typesafe.akka" %% "akka-cluster" % akkaVersion
+					val specs2core = "org.specs2" %% "specs2-core" % "4.16.0"
+
+					// Projects
+					val backendDeps =
+					Seq(akkaActor, specs2core % Test)
+					}
+					```
+					`build.sbt`
+
+					```scala
+					ThisBuild / scalaVersion := "3.2.0"
+					ThisBuild / organization := "net.cringe"
+
+					lazy val hello = (project in file("."))
+					.settings(
+					name := "Hello",
+					libraryDependencies ++= backendDeps
+					)
+					```
+				</section>
+				<section data-markdown>
+					```console
+					build.sbt
+					project/
+						plugins.sbt
+						build.properties
+						meta and build support files
+					src/
+						main/
+							resources/
+								files to include in main jar here
+							scala/
+								main Scala sources
+							scala-2.12/
+								main Scala 2.12 specific sources
+							java/
+								main Java sources
+						test/
+							resources/
+								files to include in test jar here
+							scala/
+								test Scala sources
+							scala-2.12/
+								test Scala 2.12 specific sources
+							java/
+								test Java sources
+					```
+				</section>
+			</section>
+
+			<section>
+				<section data-markdown>
+					## Scalatest
+					Basic, easy-to-use testing framework for Scala.
+					* Supports different testing styles 
+					* DSL for assertions (matchers)
+					* Property-based testing
+					* Asynchronous testing
+
+					We will use FlatSpec style in this lab, you are free to choose [any](https://www.scalatest.org/user_guide/selecting_a_style)
+
+					```
+					libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.14" % Test
+					```
+				</section>
+				<section data-markdown>
+					## Core concepts
+					* Suite - a collection of tests represented by a class
+					* Test - a named piece of code that can succeed, fail, be pending or canceled
+					* Assertion - expression that checks the result of the test
+				</section>
+				<section data-markdown>
+				# Simple example 
+				```scala
+				import collection.mutable.Stack
+				import org.scalatest.flatspec.AnyFlatSpec
+
+				class StackSpec extends AnyFlatSpec {
+
+					"A Stack" should "pop values in last-in-first-out order" in {
+						val stack = new Stack[Int]
+						stack.push(1)
+						stack.push(2)
+						assert(stack.pop() === 2)
+						assert(stack.pop() === 1)
+					}
+
+					it should "throw NoSuchElementException if an empty stack is popped" in {
+						val emptyStack = new Stack[String]
+						assertThrows[NoSuchElementException] {
+						emptyStack.pop()
+						}
+					}
+				}
+				```
+				</section>
+
+				<section data-markdown>
+					## Assertions
+					* `assert` for general assertions;
+					* `assertResult` to differentiate expected from actual values;
+					* `assertThrows` to ensure a bit of code throws an expected exception;
+					* `assertDoesNotCompile` to ensure a bit of code does not compile;
+					* `assertCompiles` to ensure a bit of code does compile;
+					* `assertTypeError` to ensure a bit of code does not compile because of a type (not parse) error;
+				</section>
+
+				<section data-markdown>
+					## Matchers
+					In addition to assertions Scalatest provides DSL to express them with words `should` or `must`.
+					```scala
+					import org.scalatest.flatspec._
+					import org.scalatest.matchers.should.Matchers._
+					```
+					### Equality
+					```
+					result should equal (3)
+					result shouldEqual 3
+					```
+					### Collection sizes
+					```scala
+					"kek" should have length 3
+					1 :: 2 :: Nil should have size 2
+					Nil shouldBe empty
+					1 :: 2 :: Nil should not be empty
+					```
+				</section>
+				<section data-markdown>
+					### Comparison
+					```scala
+					1 should be < 7
+					1 should be > 0
+					1 should be <= 7
+					1 should be >= 0
+					```
+
+					### Number ranges
+					```scala
+					7.039391 should equal (6.9 +- 0.2)
+					5 should equal (7 +- 2)
+					```
+					### Other good examples
+					```scala
+					(Vector(" A", "B ") should contain atLeastOneOf ("a ", "b", "c")) (after being lowerCased and trimmed)
+
+					an [IndexOutOfBoundsException] should be thrownBy s.charAt(-1)
+
+					the [IndexOutOfBoundsException] thrownBy {
+						s.charAt(-1)
+					  } should have message "String index out of range: -1"
+
+					List(1, 2, 3) shouldBe sorted
+
+					"val a: String = 1" shouldNot compile
+
+					case class Name(first: String, middle: String, last: String)
+					val name = Name("Artem", "Grigorevich", "Bakhanov")
+					name should matchPattern { case Name("Artem", _, _) => }
+					```
+				</section>
+				<section data-markdown>
+					## Other testing frameworks
+					* Specs2 - unit-testing and acceptance testing
+					* uTest - simple testing framework
+					* MUnit - another one with diffs, stackraces and colors
+					* Scalacheck - property-based testing
+
+					Choose any you want:)
 				</section>
 			</section>
 		</div>
@@ -156,7 +523,7 @@
 			center: true,
 			hash: true,
 			minScale: 0.1,
-    		maxScale: 0.9,
+			maxScale: 0.9,
 
 			// Learn about plugins: https://revealjs.com/plugins/
 			plugins: [RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight]
