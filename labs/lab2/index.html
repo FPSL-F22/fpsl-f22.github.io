@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+
+	<title>Lab 01. Scala and sbt basics</title>
+
+	<meta name="description" content="Lab 02. Scala basics cont">
+	<meta name="author" content="Pavel Tishkin">
+
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="/dist/reset.css">
+	<link rel="stylesheet" href="/dist/reveal.css">
+	<link rel="stylesheet" href="/dist/theme/black.css" id="theme">
+
+	<!-- Theme used for syntax highlighting of code -->
+	<link rel="stylesheet" href="/plugin/highlight/monokai.css">
+</head>
+
+<body>
+
+	<div class="reveal">
+		<div class="slides">
+			<section data-markdown>
+				## Introduction to FP and Scala
+				### Lab 02
+
+				Pavel Tishkin
+			</section>
+			<section>
+				<section data-markdown>
+					<script type="text/template">
+						## Who am I?
+
+						* IU DS Master student <!-- .element: class="fragment" style="text-align: left;"-->
+						* Scala developer at Tinkoff, SME <!-- .element: class="fragment" style="text-align: left;"-->
+						* Some features on the main page of WEB application <!-- .element: class="fragment" style="text-align: left;"-->
+						* Scala 2, Cats 2, tiny bit of ZIO <!-- .element: class="fragment" style="text-align: left;"-->
+					</script>
+				</section>
+			</section>
+			<section>
+				<section data-markdown>
+					<script type="text/template">
+						## Labs information
+	
+						* Each lab you receive one or several assignments. In addition you also get tasks on lectures. The deadline is usually until the next lab. <!-- .element: class="fragment" style="text-align: left;" -->
+						* Labs cost 20% of your course grade. <!-- .element: class="fragment" style="text-align: left;"-->
+						* Attendance is not graded. <!-- .element: class="fragment" style="text-align: left;"-->
+						* Lecture tasks (if any) will be submitted to Moodle separately. <!-- .element: class="fragment" style="text-align: left;" -->
+					  </script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## Project
+
+						* Will be decided later (after the half of the course) <!-- .element: class="fragment" style="text-align: left;"-->
+						* The project costs 40% of your course grade. <!-- .element: class="fragment" style="text-align: left;"-->
+						* You can work in teams up of to two people. <!-- .element: class="fragment" style="text-align: left;"-->
+						* Clear work distribution is required. Each team member must be able to explain what was their part. <!-- .element: class="fragment" style="text-align: left;"-->
+						* It can be a server, full-stack application, telegram bot, contribution to an open-source project or anything else but the main requirement is to use modern FP frameworks. <!-- .element: class="fragment" style="text-align: left;"-->
+						* More details and specifications are TBD. <!-- .element: class="fragment" style="text-align: left;"-->
+					  </script>
+				</section>
+			</section>
+
+			<section>
+				<section data-markdown>
+					<script type="text/template">
+						## Expressions
+						
+						In Scala, everything is an expression. <!-- .element: class="fragment" style="text-align: left;" -->
+						
+						Every expression is calculated to some type. <!-- .element: class="fragment" style="text-align: left;" -->
+					</script> 
+				</section>
+                <section data-markdown>
+                    ```scala [1-2|1|2]
+                        "Hello world!" // This is an expression of type String
+                        1 + 1 // This is an expression of type Integer
+                    ```
+                </section>
+                <section data-markdown=>
+                    <script type="text/template">
+                        ## But what about statements?
+                        ```scala
+                            val kek = "ABOBA" // ???
+                        ```
+                    </script>
+                </section>
+                <section data-markdown=>
+                    <script type="text/template">
+                        ## Unit
+                        
+                        * Special abstract scala type that has a single correct value:
+                        ```scala 
+                        val kek = "ABOBA" // Unit
+                        ()                // This is the only representation of type Unit 
+                        ```
+                        * All of the expressions are of type unit, but inverse is not always true: <!-- .element: class="fragment" style="text-align: left;" -->
+                        ```scala 
+                        println("Hi!") // Unit
+                        ```
+                        * We will cover Scala type system later today <!-- .element: class="fragment" style="text-align: left;" -->
+                    </script>
+                </section>
+                <section data-markdown=>
+                    <script type="text/template">
+                        For value or variable assignment Scala compiler waits an expression:
+
+                        ```scala 
+                        val a = <Expression>
+                        ```
+                        
+                        We can fill it with ints, for example:
+
+                        ```scala 
+                        val a: Int = 2 + 3
+                        ```
+                    </script>
+                </section>
+                <section data-markdown=>
+                    <script type="text/template">
+                        * Scala compiler is smart. It can understand that the right side is of type Int, therefore, the type of the variable is also int.
+                        * We can omit the type of value. It is called Type Inference:
+                        ```scala 
+                        val a = 2 + 3 // a is of type Int
+                        ```
+                    </script>
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Variables and values
+                    Variables are represented by var and can be reassigned:
+                    ```scala 
+                        var a = 1
+                        a = 2
+                    ```
+                    Values are represented by val and are immutable: <!-- .element: class="fragment" style="text-align: left;" -->
+                    ```scala 
+                        val a = 1
+                        a = 2 // Will not be compiled
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Functions
+                    * Can be written using def keyword: <!-- .element: class="fragment" style="text-align: left;" -->
+                    ```scala 
+                        def doSmth(a: Int, b: String): Int = {
+                            val sas = ""
+                            ???
+                            1 // Return an integer
+                        }
+                    ```
+                    * Can have multiple lines, but the last line must be of result type <!-- .element: class="fragment" style="text-align: left;" -->
+                </section>
+                <section data-markdown>
+                    * With single expression we can omit curly braces (and the result type. It can be inferenced): <!-- .element: class="fragment" style="text-align: left;" -->
+                    ```scala 
+                        def doSmth(a: Int) = 1 // Return an integer
+                    ```
+                </section>
+                <section data-markdown>
+                    Have a special type constructor =>:
+                    ```scala 
+                        def doSmth(a: Int, b: String): Int = {
+                            val sas = ""
+                            ???
+                            1 // Return an integer
+                        }
+
+                        val doSmth: (Int, String) => Int = doSmth _
+                    ```
+                </section>
+                <section data-markdown>
+                    Can be passed as arguments:
+                    ```scala 
+                        def doSmth(a: Int, b: (Int, Int) => Int): Int = {
+                            ???
+                        }
+
+                        val doSmth: doSmth(1, _ + _)
+                    ```
+                    Such functions (as doSmth) are called Higher Order Functions
+                </section>
+                <section data-markdown>
+                    ## Multiple argument lists
+                    Support multiple argument lists:
+                    ```scala 
+                        def doSmth(a: Int)(b: String): Unit = {
+                            // your code here
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    Argument lists can have different sets of arguments with different types:
+                    ```scala 
+                        def doSmth[A, B, C, D](a: A)(b: B, c: C): D = {
+                            // your code here
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    Solve the problems of type inference: <!-- .element: class="fragment" style="text-align: left;" -->
+                    ```scala 
+                        def doSmth[A](a: A, b: A, op: (A, A) => A): Unit = {
+                            // your code here
+                        }
+                        val notCompile = doSmth(1, 2, _ + _)
+                        // will not compile, as scala cannot infer types
+                        // of args
+                        val compiles = doSmth(1, 2, (a: Int, b: Int) => a+b)
+                    ```
+                </section>
+                <section data-markdown>
+                    Using multiple argument lists, Scala can infer from the first arg list that the type of A is indeed Integer:
+                    ```scala 
+                        def doSmth[A](a: A, b: A)(op: (A, A) => A): Unit = {
+                            // your code here
+                        }
+                        val compiles = doSmth(1, 2, _ + _)
+                    ```
+                </section>
+                <section data-markdown>
+                    We can apply some of the argument lists:
+                    ```scala 
+                        def doSmth[A, B, C, D](a: A)(b: B, c: C): D = {
+                            // your code here
+                        } // Function of type A => (B, C) => D
+
+                        val a: A = ???
+
+                        val doSmt1: (B, C) => D = doSmth(a)
+                    ```
+                    Each new application produces a new function. Only the rest of the arguments are required.
+                    This concept is called Currying <!-- .element: class="fragment" style="text-align: left;" --> 
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Closure
+                    Function that captures a variable from outer scope:
+                    ```scala 
+                        val a = 1
+
+                        def fun(b: Int): Int = {
+                            a + b
+                        }
+
+                        val b = fun(3) // Result: 4
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Closure
+                    Be aware, that it captures changes to the variables!:
+                    ```scala 
+                        var a = 1
+
+                        def fun(b: Int): Int = {
+                            a + b
+                        }
+
+                        val b = fun(3) // Result: 4
+                        a = 2
+                        val c = fun(3) // Result: 5
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Control Structures
+                </section>
+                <section data-markdown>
+                    ## If statement
+                    Basic control structure that returns the first Expression if condition is True and the second otherwise:
+                    ```scala 
+                        if (condition) {
+                            Expression
+                        } else {
+                            Expression
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    Square brackets can be omited in case we have one line expressions:
+                    ```scala 
+                        if (condition) 
+                            1 
+                        else 
+                            2
+                    ```
+                </section>
+                <section data-markdown>
+                    If statements return an expression, so branches must have the same type for correct inference:
+                    ```scala 
+                        val a: Int = if (condition) 1 else 2
+                    ```
+                </section>
+                <section data-markdown>
+                    ## while loop
+                    ```scala
+                    var a = 0
+
+                    while (a < 5):
+                        println("A?")
+                        a += 1
+                    ```
+                </section>
+                <section data-markdown>
+                    ## for loop
+                    ```scala
+                    for(a <- 1 to 5) {
+                        println("A?")
+                    }
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Classes
+                    Are defined using class keyword:
+                    ```scala
+                    class Dog(private var name)
+                    ```
+                    field name serves as both:
+                    * variable field of class Dog
+                    * an argument to the constructor of Dog
+                </section>
+                <section data-markdown>
+                    Objects are created using new keyword:
+                    ```scala
+                    val dog = new Dog(private var name)
+                    ```
+                </section>
+                <section data-markdown>
+                    Classes can also have val. Since they are immutable, we can omit private keyword:
+                    ```scala
+                    val dog = new Dog(val name)
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Objects
+                    * Class that has only one instance that is already defined
+                    * Acts like static singleton
+
+                    ```scala
+                        object One {
+                            val value = 1
+                        }
+
+                        object Two {
+                            val value = One.value + 1
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    Have their own special type (through .type syntax) and can be treated as regular objects:
+
+                    ```scala
+                        object One {
+                            val value = 1
+                        }
+
+                        val one: One.type = One
+                        val two = one.value + 1
+                    ```
+                </section>
+                <section data-markdown>
+                    Objects can have the same name as a class. In this case, they are called companion:
+
+                    ```scala
+                        class Force(mass: Double) {
+                            def force(): Double = mass * Force.g
+                        }
+
+                        object Force {
+                            val g = 9.8
+                        }
+
+                        val one: One.type = One
+                        val two = one.value + 1
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Program start
+                    ```scala
+                    object Main {
+                        def main(args: Array[String]): Unit = {
+                            println("Hello world!")
+                        }
+                    }
+                    ```
+                    Or, alternatively
+                    ```scala
+                    object Main extends App {
+                        println("Hello world!")
+                    }
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Pattern Matching
+                    - mechanism for checking value against a pattern
+                </section>
+                <section data-markdown>
+                    used via control structure match on a value:
+                    ```scala
+                        import scala.util.Random
+
+                        val x: Int = Random.nextInt(10)
+
+                        x match {
+                            case 0 => println("zero")
+                            case 1 => println("one")
+                            case _ => println("other") // default case
+                            // use _ if you do not plan to use this variable
+                        }
+                    ```
+                </section>
+
+                <section data-markdown>
+                    can create local variables in cases:
+                    ```scala
+                        import scala.util.Random
+
+                        val x: Int = Random.nextInt(10)
+
+                        x match {
+                            case 0 => println("zero")
+                            case 1 => println("one")
+                            case oth => println(oth.toString)
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    All patterns must be checked, they must have the same return type:
+                    ```scala
+                        import scala.util.Random
+
+                        val x: Int = Random.nextInt(10)
+
+                        x match {
+                            case 0 => println("zero")
+                            case 1 => 1 // return type is String, not Int, error
+                            // default case is not checked, error
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    if statements can be used in cases. This is called Pattern Guard:
+                    ```scala
+                        import scala.util.Random
+
+                        val x: Int = Random.nextInt(10)
+
+                        x match {
+                            case x if x%2 != 0 => println("even")
+                            _ => println("odd")
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    Can combine multiple patterns with the use of |:
+                    ```scala
+                        import scala.util.Random
+
+                        val x: Int = Random.nextInt(10)
+
+                        x match {
+                            case 0 | 1 | 2 => println("less than 3")
+                            _ => println("more or equal to 3")
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    As it is an expression, we can also use it in function declarations:
+                    ```scala
+                        def fun(x: Int): Unit = 
+                            x match {
+                                case 0 | 1 | 2 => 
+                                    // We can also have multiple statements
+                                    // we do not need to use {} 
+                                    val a = 1
+                                    println(a)
+                                    println("less than 3")
+                                _ => println("more or equal to 3")
+                            }
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Traits
+                    * Same as java interfaces
+                    * Declarations of fields and values
+                    * They are allowed to be abstract (no implementation)
+                    * They are allowed to have implementation
+
+                    ```scala
+                        trait MyTrait {
+                            val id = 1
+                            val Number
+
+                            def printId = println(id)
+                            def addNumber(other: Int): Int
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    Traits can be implemented by classes or objects:
+
+                    ```scala
+                        class/object MyClass extends MyTrait {
+                            override val Number = 2
+
+                            override def addNumber(other: Int): Int = _ + _
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    You can implement multiple traits, but extend only a single class:
+
+                    ```scala
+                        class MyClassOne extends MyClassTwo with MyTraitOne with MyTraitTwo
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Exceptions
+                    JVM proides two subtypes of Throwable:
+                    * Error - something fatal, that should not be handled (JVM error)
+                    * Exception - condition, that application may want to handle (ArithmeticException)
+                </section>
+                <section data-markdown>
+                    Throwables in java can also be:
+                    * Checked - require to be handling
+                    * Unchecked - do not require to be handled
+                </section>
+                <section data-markdown>
+                    ## Try / Catch
+
+                    Scala also has try / catch control structure (let's not use it after we cover other ways to handle errors):
+                    ```scala
+                    var result = 1
+                    try {
+                        result = 1/0
+                    } catch {
+                        case e: ArithmeticException => ???
+                    }
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Packages
+                    * Classes, Objects and Traits are top-level objects. You can not create functions outside of objects
+                    * Classes, Objects and Traits are created in packages (1+)
+
+                    ```scala
+                    package myPackage
+
+                    object MyObjectOne
+                    
+                    class MyClass()
+                    ```
+                </section>  
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Case Class
+                    Special kind of class to hold values with predefined set of methods. You cannot extend from it
+                    ```scala
+                        case class MyCaseClass(fieldOne: Int, fieldTwo: String)
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Case Class
+                    No need to write new keyword to construct objects
+                    ```scala
+                        val a = MyCaseClass(1, "sas")
+                    ```
+                    Because case class automatically implements method apply for you:
+                    ```scala
+                        case class MyCaseClass(a: Int, b: String)
+
+                        object MyCaseClass{
+                            def apply(a: Int, b: String): MyCaseClass =
+                                new MyCaseClass(a, b)
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    Has predefined method equals:
+                    ```scala
+                        MyCaseClass(1, "sas") == MyCaseClass(1, "sas") // true
+                        new NotCaseClass(1, "sas") == new NotCaseClass(1, "sas") // false
+                    ```
+                    Has predefined method copy:
+                    ```scala
+                        case class MyCaseClass(f1: Int, f2: String)
+
+                        val a = MyCaseClass(1, "sas")
+                        val b = a.copy(f2="sos") // MyCaseClass(1, "sos")
+                        
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Algebraic Data types
+                    Recall Maths:
+
+                    Set A is a collection of objects that are contained in it
+
+                    * Object can be part of the set
+                    * Sets have operation of Union and Intersection, Difference and Subset Relation
+                </section>
+                <section data-markdown>
+                    ## Product type:
+
+                    ```scala
+                    case class Person(name: String, location: String)
+                    ```
+                    * Cartesian product of sets (String X String)
+                    Named cartesian product of types String and String with names and positions of the fields
+                </section>
+                <section data-markdown>
+                    ## Tuple:
+                    Anonimous product type:
+                    ```scala
+                    final case class Tuple1[T1](_1: T1)
+                    final case class Tuple2[T1, T2](_1: T1, _2: T2)
+                    final case class Tuple3[T1, T2, T3](_1: T1, _2: T2, _3: T3)
+
+                    val a: (Int, String) = (1, "1")
+                    val b: Tuple2[Int, String] = a
+                    val c: (String, Int) = Tuple2("1", 1)
+                    val (i: Int, j: String) = b
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Sum type:
+
+                    ```scala
+                        sealed abstract class City
+                        case class Moscow(postCode: String) extends City
+                        case class Innopolis(postCode: String) extends City
+                    ```
+                    * Somewhat set union (Some union None)
+                    * sealed means that children of this class can only be declared inside this package
+                    * It allows pattern mathing to check exhaustiveness of all cases
+                </section>
+                <section data-markdown>
+                    Now we can match using runtime type
+                    
+                    ```scala
+                        city match {
+                            case moscow: Moscow => println("I'm in Moscow!")
+                            case innopolis: Innopolis => println("I'm in Innopolis!")
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    It is also possible to extract in match by classes:
+                    
+                    ```scala
+                        city match {
+                            case Moscow(code) => println("Moscow code $code")
+                            case Innopolis(code) => println("Innopolis code $code")
+                        }
+                    ```
+
+                    Extractor both matches the type and calls unapply() function (It is also defined in case class)
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Subtyping
+
+                    Type A is a subtype of type B if values of type A are coercible to type B. Coersion is a one-way (you can't go backwards) widening of a value's type association.
+
+                    ```scala
+                        val a: A = new A()
+                        val b: B = a // coercion
+                    ```
+                    In this case the type A is called *narrow type*, type B - *wider type*.
+                </section>
+                <section data-markdown>
+                    Subtyping is driven by types' representation. 
+                    
+                    It means that the main method of introducing subtyping is inheritance and interface implementation:
+
+                    ```scala
+                        trait Meow {
+                            def meow: String
+                        }
+                        class Cat extends Meow {
+                            def meow = "meow"
+                        }
+                        val cat: Meow = new Cat
+                    ```
+                </section>
+                <section data-markdown>
+                    Scala type hierarchy
+                    ![image](https://docs.scala-lang.org/resources/images/tour/unified-types-diagram.svg)
+                </section>
+                <section data-markdown>
+                    #### Any 
+                    - the widest type in the system. A supertype of all types. Looks like universal set, but is not, because it does not contain itself
+
+                    #### AnyVal 
+                    - supertype for value types (stored in stack): Int, Boolean, ... . Sometimes they are passed as reference types.
+                    
+                    #### AnyRef 
+                    - supertype for all reference types, synonym for **java.lang.Object**
+
+                </section>
+                <section data-markdown>
+                    #### Unit 
+                    - singleton type, has only one valid value - (). Similar to a set of one value - { a }.
+
+                    #### Null 
+                    - singleton type, subtype of all AnyRef types. Has only one valid value - **null** (avoid pls)
+
+                    #### Nothing 
+                    - empty/botton type the most narrow of them. Has no valid type. Similar to an empty set - {}. throw and return are expressions of type Nothing.
+                </section>
+                <section data-markdown>
+                    ## Not Subtyping
+                    Logically, Student represents a subset of Person values. Student can be converted to Person:
+
+                    ```scala
+                        final case class Person(name: String, birthDate: LocalDate)
+                        final case class Student(name: String, birthDate: LocalDate, year: Year)
+
+                        def studentToPerson(student: Student): Person =
+                        Person(student.name, student.birthDate)
+                    ```
+                    But this is not subtyping, since we do not have compatible JVM representations (Student does not extend from Person)
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## OPTION
+
+                    ```scala
+                        sealed trait Option[+T] {
+                            def get: T
+                        }
+                        final case class Some[+T](get: T) extends Option[T]
+                        case object None extends Option[Nothing] {
+                            def get: Nothing = throw new NoSuchElementException
+                        }
+                    ```
+
+                    Used to model potentially missing values. `get` is not usually called, instead safe `getOrElse` are used.
+
+                    Example of usage: potentially missing query parameters. It is not an error, but we need to model them somehow.
+                </section>
+                <section data-markdown>
+                    ## EITHER
+
+                    ```scala
+                        sealed trait Either[L, R]
+                        final case class Left[L, R](left: L) extends Either[L, R]
+                        final case class Right[L, R](right: R) extends Either[L, R]
+                    ```
+                    Anonymous sum-type used to model the existance of one type or another (not together).
+
+                    Use case: Store potential error in L type, and successful result in R type. Pattern match to find out what you get.
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## (Co)variance
+
+                    Remember this strange + sign from the definition of option:
+
+                    ```scala
+                        sealed trait Option[+A]
+                    ```
+
+                    This is called variance. It allows us to control the subtyping in classes that accept generics
+                </section>
+                <section data-markdown>
+                    Let C be subtype of B:
+                    ```scala
+                    class B()
+                    class C() extends B
+
+                    val coerceToB: B = new C()
+                    ```
+                    But what can be we say about Option[B] and Option[C]? There are three answers to this question:
+                </section>
+                <section data-markdown>
+                    ## 1. The subtyping is preserved 
+                    (Option[C] is subtype of Option[B])
+
+                    This is denoted as `+` in generic argument:
+
+                    ```scala
+                    class Option[+A]
+
+                    val Option[B] = new Option[C](someC)
+                    ```
+                </section>
+                <section data-markdown>
+                    ## 2. Actually, the subtyping is reversed
+                    (Option[B] is subtype of Option[C])
+
+                    This is denoted as `-` in generic argument:
+
+                    ```scala
+                    class Option[-A]
+
+                    val Option[C] = new Option[B](someB)
+                    ```
+                </section>
+                <section data-markdown>
+                    ## 3. We can not reason about subtyping
+                    (Option[B] and Option[C] are unrelated)
+
+                    Just leave the type parameter as is:
+
+                    ```scala
+                    class Option[A]
+
+                    val Option[C] = new Option[B](someB) // Will not compile
+                    ```
+                </section>
+            </section>
+            
+
+	<script src="/dist/reveal.js"></script>
+	<script src="/plugin/zoom/zoom.js"></script>
+	<script src="/plugin/notes/notes.js"></script>
+	<script src="/plugin/search/search.js"></script>
+	<script src="/plugin/markdown/markdown.js"></script>
+	<script src="/plugin/highlight/highlight.js"></script>
+	<script>
+
+		// Also available as an ES module, see:
+		// https://revealjs.com/initialization/
+		Reveal.initialize({
+			controls: true,
+			progress: true,
+			center: true,
+			hash: true,
+			minScale: 0.1,
+			maxScale: 0.9,
+
+			// Learn about plugins: https://revealjs.com/plugins/
+			plugins: [RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight]
+		});
+	</script>
+
+</body>
+
+</html>
