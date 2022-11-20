@@ -662,6 +662,87 @@
                     ```
                 </section>
             </section>
+            <section>
+                <section data-markdown>
+                  ## Implicit classes
+                  (or syntactic extensions)  
+                </section>
+                <section data-markdown>
+                    * Suppose you would like to define some additional functionality for some types, but it is not possible to change the code of that type.
+                    * In this case, we can define additional methods (extension methods) for any type through implicit classes
+                </section>
+                <section data-markdown>
+                    Let's consider an example. We want to define a method to convert Int to WeekDay:
+                    ```scala
+                    sealed trait WeekDay
+                    object WeekDay {
+                        case object Working extends WeekDay
+                        case object Resting extends WeekDay
+                        
+                        def fromInt(i: Int): Option[WeekDay] =
+                        i match {
+                            case x if 1 <= x && x <= 5 => Some(Working)
+                            case x if 6 <= x && x <= 7 => Some(Resting)
+                            case _ => None
+                        }
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    Usage of this function is still verbose. Let's make it more concise
+
+                    ```scala
+                    val result = WeedDay.fromInt(1)
+                    ```
+                </section>
+                <section data-markdown>
+                    Let's define an implicit class with a new method toWeekDay
+                    ```scala
+                    implicit class IntWeekDayOps(val i: Int)
+                    extends AnyVal {
+                    
+                    def toWeekDay: Option[WeekDay] =
+                        WeekDay.fromInt(i)
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    Why extend AnyVal:
+
+                    https://docs.scala-lang.org/overviews/core/value-classes.html#summary_of_limitations
+
+                    TLDR: To not allocate objects for integers on the heap, and store them on the stack. Has some limitations to it.
+                </section>
+                <section data-markdown>
+                    Now if implicit class is in implicit scope, then we can use method toWeekDay on values of type Int
+
+                    ```scala
+                        val monday: Int = 1
+                        val one = monday.toWeekDay // one = Some(Working)
+                        val two = 0.toWeekDay      // two = None
+                    ```
+                </section>
+                <section data-markdown>
+                    implicit class is implemented through implicit def and ordinary class.
+                    
+                    So, it desugars to this:
+
+                    ```scala
+                    class IntWeekDayOps(val i: Int) {
+                        def toWeekDay: Option[WeekDay] = WeekDay.from(i)
+                    }
+                       
+                    implicit def IntWeekDayOpsDerive(i: Int): IntWeekDayOps =
+                        new IntWeekDayOps(i)
+                    ```
+                </section>
+                <section data-markdown>
+                    Constraints on implicit classes are followed from the fact that it desugars to an implicit def:
+
+                    * Only one explicit argument in the constructor of the class because of implicit def
+                    * Must be defined in the object / class / trait. No high-level definition because of def
+                </section>
+            </section>
 
 	<script src="/dist/reveal.js"></script>
 	<script src="/plugin/zoom/zoom.js"></script>
