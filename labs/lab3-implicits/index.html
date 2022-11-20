@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+
+	<title>Lab 01. Scala and sbt basics</title>
+
+	<meta name="description" content="Lab 02. Scala basics cont">
+	<meta name="author" content="Pavel Tishkin">
+
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="/dist/reset.css">
+	<link rel="stylesheet" href="/dist/reveal.css">
+	<link rel="stylesheet" href="/dist/theme/black.css" id="theme">
+
+	<!-- Theme used for syntax highlighting of code -->
+	<link rel="stylesheet" href="/plugin/highlight/monokai.css">
+</head>
+
+<body>
+
+	<div class="reveal">
+		<div class="slides">
+			<section data-markdown>
+				## Introduction to FP and Scala
+				### Lab 03
+
+				Pavel Tishkin
+			</section>
+			<section>
+				<section data-markdown>
+					<script type="text/template">
+						## Informations on Course regulations
+
+						### Grading criteria <!-- .element: class="fragment" style="text-align: left;"-->
+						* Final exam - 50% <!-- .element: class="fragment" style="text-align: left;"-->
+						* Homeworks - 50% <!-- .element: class="fragment" style="text-align: left;"-->
+					</script>
+				</section>
+                <section data-markdown>
+						## Final Exam
+
+						* The format is going to be decided a bit later
+				</section>
+			</section>
+            <section>
+                <section data-markdown>
+                    ## Refinement type
+
+                    Sometimes, our code may not work over whole set of input. In this case, we can add such predicates to the type system!
+
+                    Examples:
+
+                    * Division by zero
+                    * Sending a mail to a valid e-mail address
+                </section>
+                <section data-markdown>
+                    Refinement type - is a value that proves that it satisfies the predicate:
+
+                    ```scala
+                        final class NonNegativeInt(val inner: Int)
+                        object NonNegativeInt {
+                            def from(i: Int): Option[Int] =
+                                if (i >= 0) Some(new NonNegativeInt(i))
+                                else None
+                        }
+                    ```
+                    
+                    As a result, we wont have to check the predicate whenever we need to use NonNegativeInt
+                </section>
+                <section data-markdown>
+                    ## Domain types
+
+                    Sometimes we may want to add a new type that is only different from the base type by its type:
+
+                    ```scala
+                        final class UserId(val inner: String)
+                        final class PaymentId(val inner: String)
+                    ```
+                </section>
+                <section data-markdown>
+                    We try to use the domain type as much as we can, to prevent us from messing something up in code. The underlying type is used only with low-level entities: Databases, Networks, etc..
+
+                    ```scala
+                        def deleteUser(userId: UserId) =
+                            database.deleteUser(userId.inner)
+                        val paymentId: PaymentId = new PaymentId("5-1337")
+
+                        // compilation error: incompatible types
+                        deleteUser(paymentId)
+                    ```
+                </section>
+            </section>
+
+            <section>
+                <section data-markdown>
+                    ## Partial functions
+
+                    Let us have a look at collect function:
+
+                    ```scala
+                    val list = List(1, 2, 3)
+                    val res = list.collect {
+                        case x if x == 2 => x
+                    }
+                    // res == Vector(2)
+                    ```
+                </section>    
+                <section data-markdown>
+                    It has a signature:
+
+                    ```scala
+                    trait List[+A] {
+                        def collect[B](f: PartialFunction[A, B]): Vector[B]
+                      }
+                    ```
+                </section>
+                <section data-markdown>
+                    * Partial function - function defined not for all domain values
+                    * Thus, compiler does not warn us about non-exhaustive pattern matching
+                </section>
+                <section data-markdown>
+                    We cannot safely apply such functions. They may fail with an exception:
+                    ```scala
+                    val f: PartialFunction[Int, Int] =
+                        {case x is x > 0 => x}
+
+                    val result = f(2) // 2
+                    f(1) // exception
+                    ```
+                </section>
+                <section data-markdown>
+                    We can lift Partial Function to a regualr function, using lift
+
+                    ```scala
+                    trait PartialFunction[A, B] {
+                        def lift: A => Option[B]
+                    }
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Access Modifiers
+                    
+                    * Object-private
+                    * Private
+                    * Package
+                    * Package-specific
+                    * Public
+                </section>
+                <section data-markdown>
+                    Object-private
+
+                    Only available for the instance of the object
+                    ```scala
+                    private[this] val classSecret: Boolean = true
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    class Example {
+                        private[this] val classSecret: Boolean = true
+                       
+                        def doSomething(other: Example): Unit = {
+                          other.classSecret // this is forbidden
+                        }
+                      }
+                    ```
+                </section>
+                <section data-markdown>
+                    Private
+
+                    Only available for the instance of one class
+                    ```scala
+                    private val classSecret: Boolean = true
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    class Example {
+                        private val classSecret: Boolean = true
+                       
+                        def doSomething(other: Example): Unit = {
+                          other.classSecret // this is allowed
+                        }
+                      }
+                       
+                      new Example().classSecret // this is forbidden                      
+                    ```
+                </section>
+                <section data-markdown>
+                    Protected
+
+                    Only available for the instances of class hierarchy
+                    ```scala
+                    protected val classSecret: Boolean = true
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    class Animal {
+                        protected def heartBeat: Unit {}
+                      }
+                       
+                      class Dog extends Animal {
+                        heartBeat  // this is allowed
+                      }                     
+                    ```
+                </section>
+                <section data-markdown>
+                    PACKAGE-SPECIFIC
+
+                    available only in package example
+                    ```scala
+                    private[example] val classSecret: Boolean = true
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    package example
+ 
+                    class Example {
+                        private[example] val classSecret: Boolean = true
+                        
+                        def doSomething(other: Example): Unit = {
+                            other.classSecret // this is allowed
+                        }
+                    }   
+                    
+                    object Test {
+                        new Example().classSecret // this is allowed
+                      }
+                    ```
+                </section>
+                <section data-markdown>
+                    Public
+
+                    Available everywhere
+
+                    ```scala
+                    val classSecret: Boolean = true
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Implicit arguments
+                </section>
+                <section data-markdown>
+                    Suppose we define separate trait for addition:
+
+                    ```scala
+                    trait Adder {
+                        def sum(i: Int, j: Int): Int
+                      }
+                    ```
+                </section>
+                <section data-markdown>
+                    We can define some simple functions using Adder
+                    ```scala
+                    def increment(base: Int)(adder: Adder): Int =
+                    adder.sum(base, 1)
+                    
+                    def sum(a: Int, b: Int)(adder: Adder): Int =
+                    adder.sum(a, b)
+                    ```
+                </section>
+                <section data-markdown>
+                    And declare Adder implementation and some logic alongside
+                    
+                    ```scala
+                    // anonymous class declaration
+                    val adder: Adder = (a, b) => a + b
+                    
+                    val summed = sum(1, 2)(adder) // summed = 3
+                    val result = increment(summed)(adder) // result = 4
+                    ```
+                </section>
+                <section data-markdown>
+                    * Overall, we can use this default implementation of Adder in any place where Adder instance is needed
+                    * So why bothering with passing it to functions? It will be great to write like this:
+                    
+                </section>
+                <section data-markdown>
+                    ```scala
+                        // anonymous class declaration
+                        val adder: Adder = (a, b) => a + b
+                        
+                        val summed = sum(1, 2) // summed = 3
+                        val result = increment(summed) // result = 4
+                        // anonymous class declaration
+                        val adder: Adder = (a, b) => a + b
+                        
+                        val summed = sum(1, 2) // summed = 3
+                        val result = increment(summed) // result = 4
+                    ```
+                </section>
+                <section data-markdown>
+                    * Actually, Scala allows this behaviour specifically using mechanism called **implicits**
+                </section>
+                <section data-markdown>
+                    In order to automatically pass the arguments, we must specifically tell it to the compiler
+                    We will do it with the implicit keyword
+                    ```scala
+                    def increment(base: Int)(implicit adder: Adder): Int =
+                    adder.sum(base, 1)
+                    
+                    def sum(a: Int, b: Int)(implicit adder: Adder): Int =
+                    adder.sum(a, b)
+                    ```
+                </section>
+                <section data-markdown>
+                    There are some restrictions on such arguments:
+                    
+                    All implicit argument types must be unique. No duplications
+                    This avoids ambiguities during implicit resolution while compiling
+                    ```scala
+                    // Invalid syntax
+                    def incrementBad(base: Int)(implicit
+                        // Compiler doesn't know for sure
+                        // which Adder instance to pass where
+                        adderOne: Adder,
+                        adderTwo: Adder
+                    ): Int =
+                    adder.sum(base, 1)
+                    ```
+                </section>
+                <section data-markdown>
+                    Only one last argument list can be implicit
+                    ```scala
+                    // Invalid syntax
+                    def incrementBad(base: Int)
+                        (implicit multiplier: Multiplier)
+                        (implicit adder: Adder): Int =
+                        adder.sum(base, 1)
+                    ```
+                </section>  
+                <section data-markdown>
+                    Better to rewrite the bad example. Let's put arguments in one argument list:
+                    ```scala
+                    def incrementGood(base: Int)(implicit
+                        adder: Adder,
+                        multiplier: Multiplier
+                    ): Int = adder.sum(base, 1)
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    * Okay. We have functions that can take implicit arguments
+                    * How do we pass the values to the arguments?
+                </section>
+                <section data-markdown>
+                    Simple answer - again using implicit keyword
+                </section>
+                <section data-markdown>
+                    ## Implicit values
+                    * Values can be implicit
+                    * This means that this particular value belongs to implicit scope and can be automatically passed as an implicit argument
+                </section>
+                <section data-markdown>
+                    Let's return to the previous example and rewrite it to correct Scala syntax:
+                    ```scala
+                        def sum(a: Int, b: Int)(implicit adder: Adder): Int =
+                            adder.sum(a, b)
+                        
+                        def increment(a: Int)(implicit adder: Adder): Int =
+                            adder.sum(a, 1)
+                        
+                        implicit val adder: Adder = (a, b) => a + b
+                        
+                        val summed = sum(1, 2) // summed = 3
+                        val result = increment(summed) // result = 4
+                    ```
+                </section>
+                <section data-markdown>
+                    This implicit value still acts like an ordinary value:
+                    ```scala
+                    implicit val adder: Adder = (a, b) => a + b
+                    
+                    val result = adder.sum(1, 2)
+                    ```
+                </section>
+                <section data-markdown>
+                    implicit value can be passed explicitly as an argument
+                    ```scala
+                    implicit val adder: Adder = (a, b) => a + b
+                    
+                    val summed = sum(1, 2)(adder) // summed = 3
+                    val result = increment(summed)(adder) // result = 4
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Implicit scopes
+                </section>
+                <section data-markdown>
+                    ## LOCAL SCOPE
+
+                    Function with implicit arguments that is called in the same scope as implicit value can use these implicit values
+                </section>  
+                <section data-markdown>
+                    Example
+                    ```scala
+                    def increment(a: Int)(implicit adder: Adder): Int =
+                        adder.sum(a, 1)
+                    
+                    {
+                        implicit val adder: Adder = (a, b) => a + b
+                        val one = increment(0) // Can see `adder`
+                        {
+                            val two = increment(1) // Can see `adder`
+                        }
+                    }
+                    
+                    val three = increment(2) // Cannot see `adder`
+                    ```
+                </section>
+                <section data-markdown>
+                    * Local scope cannot have multiple implicit values of the same type
+                    * Compiler will fail due to ambiguity
+                    ```scala
+                    {
+                        implicit val adder: Adder = (a, b) => a + b
+                        implicit val specialAdder: Adder = (a, b) => a + b + 1
+                        // multiple implicit values of type Adder in scope
+                        val one = increment(0)
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Imported scope
+
+                    We can declare implicit values in objects and import them in place with underscore _
+                </section> 
+                <section data-markdown>
+                    ```scala
+                    def increment(a: Int)(implicit adder: Adder): Int =
+                        adder.sum(a, 1)
+                    
+                    {
+                        import Adders._ // import Adders.adder also works
+                        val one = increment(0) // Can see `adder`
+                        {
+                            val two = increment(1) // Can see `adder`
+                        }
+                    }
+                    
+                    val three = increment(2) // Cannot see `adder`
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Companion object scope
+                    Global implicit scope
+                </section>  
+                <section data-markdown>
+                    * If you place an implicit value of the type in its companion object, then the implicit value will be visible everywhere
+                    * No need for imports
+                </section>  
+                <section data-markdown>
+                    Example
+                    ```scala
+                    trait Adder {
+                        def sum(i: Int, j: Int): Int
+                    }
+                    
+                    object Adder {
+                        implicit val adder: Adder = (a, b) => a + b
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Scope precedence
+                    All three scopes can co-exist with each other
+                    Compiler looks for implicits in this order:
+                    
+                    * Local Scope
+                    * Imported Scope
+                    * Companion Scope
+                </section>
+                <section data-markdown>
+                    ```scala
+                    trait Adder {
+                        def sum(a: Int, b: Int): Int = a + b
+                      }
+                      object Adder {
+                        implicit val adder: Adder = (a, b) => a + b
+                      }
+                      object Adders {
+                        implicit val defaultAdder: Adder = (a, b) => a + b
+                      }
+                      implicit val localAdder: Adder = (a, b) => a + b
+                      import Adders._
+                       
+                      increment(1) // Will use `localAdder`
+                    ```
+                </section>
+                <section data-markdown>
+                    If we remove implicit value from the scope, import scope will be chosen
+                    ```scala
+                    trait Adder {
+                        def sum(a: Int, b: Int): Int = a + b
+                      }
+                      object Adder {
+                        implicit val adder: Adder = (a, b) => a + b
+                      }
+                      object Adders {
+                        implicit val defaultAdder: Adder = (a, b) => a + b
+                      }
+                      import Adders._
+                       
+                      increment(1) // Will use `defaultAdder`
+                    ```
+                </section>
+                <section data-markdown>
+                    If we remove imported implicit value, then companion scope will be searched
+                    ```scala
+                    trait Adder {
+                        def sum(a: Int, b: Int): Int = a + b
+                      }
+                      object Adder {
+                        implicit val adder: Adder = (a, b) => a + b
+                      }
+                      object Adders {
+                        implicit val defaultAdder: Adder = (a, b) => a + b
+                      }
+                       
+                      increment(1) // Will use `adder`
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Summoning
+                    
+                    Mechanism to call implicits from outer scope
+
+                    ```scala
+                    def implicitly[T](implicit value: T): T =
+                        value
+
+                    val result = implicitly[Adder].sum(1, 2) 
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    # Implicit Defs
+
+                    In Scala, we have not only implicit values and arguments. We also have implicit defs
+                </section>
+                <section data-markdown>
+                    We can create or derive implicit values from other implicit values
+                </section>
+                <section data-markdown>
+                    Let's define a trait ShowInt that allows to convert Int to String
+
+                    ```scala
+                    trait ShowInt {
+                        def show(a: Int): String
+                      }
+                       
+                      object ShowInt {
+                        implicit val showInt: ShowInt = a => a.toString
+                      }
+                    ```
+                </section>
+                <section data-markdown>
+                    Same trait for BigDecimal
+
+                    ```scala
+                    trait ShowBigDecimal {
+                        def show(a: BigDecimal): String
+                      }
+                      object ShowBigDecimal {
+                        implicit val showBigDecimal: ShowBigDecimal =
+                          a => a.toString
+                      }
+                    ```
+                </section>
+                <section data-markdown>
+                    And now let's define composite trait ShowPerson for class Person
+
+                    ```scala
+                    class Person( 
+                        val name: String,
+                        val age: Int,
+                        val money: BigDecimal
+                    )
+                        
+                    trait ShowPerson {
+                        def show(a: Person): String
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    object ShowPerson {
+                        implicit def showPerson(implicit
+                          showInt: ShowInt,
+                          showBigDecimal: ShowBigDecimal
+                        ): ShowPerson = { person =>
+                          val name = person.name
+                          val age = showInt.show(person.age)
+                          val money = showBigDecimal.show(person.money)
+                            s"Person($name, $age, $money)"
+                        }
+                      }
+                    ```
+                </section>
+                <section data-markdown>
+                    * We used other implicit values for types ShowInt and ShowBigDecimal to define an implicit value for type ShowPerson
+
+                    * In other words, we derived implicit value for ShowPerson
+                </section> 
+                <section data-markdown>
+                    Because there are global implicit values for ShowInt and ShowBigDecimal, we can easily summon ShowPerson and use it:
+
+                    ```scala
+                        val person = new Person("Ivan", 23, -1,5)
+                        println(implicitly[ShowPerson].show(person))
+                        // sys.out = Person(Ivan, 23, -1,5)
+                    ```
+                </section> 
+                <section data-markdown>
+                    ## Implicit Conversions
+
+                    If we define implicit def with only one explicit argument, then it will be treated as conversion function
+
+                    ```scala
+                    implicit def intToString(i: Int): String = i.toString
+ 
+                    val i: Int = 1
+                    // implicitly apply function intToString
+                    val str: String = i
+                    ```
+                </section>    
+                <section data-markdown>
+                    It will be equal to this
+                    ```scala
+                    val i: Int = 1
+                    val str: String = intToString(i)                    
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Restrictions:
+
+                    * You cannot define implicit def with more than one explicit argument
+                    * Such conversion functions can be treated as an implicit value of function type
+                </section>
+                <section data-markdown>
+                    ```scala
+                    implicit def intToString(i: Int): String = i.toString
+ 
+                    def print(i: Int)(implicit convert: Int => String): Unit =
+                      println(convert(i))
+                     
+                    print(1) // sys.out = 1
+                    ```
+                </section>
+            </section>
+
+	<script src="/dist/reveal.js"></script>
+	<script src="/plugin/zoom/zoom.js"></script>
+	<script src="/plugin/notes/notes.js"></script>
+	<script src="/plugin/search/search.js"></script>
+	<script src="/plugin/markdown/markdown.js"></script>
+	<script src="/plugin/highlight/highlight.js"></script>
+	<script>
+
+		// Also available as an ES module, see:
+		// https://revealjs.com/initialization/
+		Reveal.initialize({
+			controls: true,
+			progress: true,
+			center: true,
+			hash: true,
+			minScale: 0.1,
+			maxScale: 0.9,
+
+			// Learn about plugins: https://revealjs.com/plugins/
+			plugins: [RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight]
+		});
+	</script>
+
+</body>
+
+</html>
