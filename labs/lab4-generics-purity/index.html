@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+
+	<title>Lab 01. Scala and sbt basics</title>
+
+	<meta name="description" content="Lab 02. Scala basics cont">
+	<meta name="author" content="Pavel Tishkin">
+
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="/dist/reset.css">
+	<link rel="stylesheet" href="/dist/reveal.css">
+	<link rel="stylesheet" href="/dist/theme/black.css" id="theme">
+
+	<!-- Theme used for syntax highlighting of code -->
+	<link rel="stylesheet" href="/plugin/highlight/monokai.css">
+</head>
+
+<body>
+
+	<div class="reveal">
+		<div class="slides">
+			<section data-markdown>
+				## Introduction to FP and Scala
+				### Lab 04
+
+				Pavel Tishkin
+			</section>
+			<section>
+				<section data-markdown>
+                    ## HW2 Grades
+                    
+                    Will be out tomorrow                        
+				</section>
+			</section>
+            <section>
+                <section data-markdown>
+                    ## Generics
+
+                    In Scala generics are realized, using Type Erasure (Thanks Java). Each generic has only one copy of itself.
+
+                    Type parameters are erased after compilation:
+
+                    ```scala
+                    class Option[+T]
+                    ```
+
+                    Compiles to bytecode equivalent of
+                    
+                    ```scala
+                    class Option
+                    ```
+
+                    The runtime classes are also equal:
+
+                    ```scala
+                    (new Option[Int]).getClass == (new Option[String]).getClass
+                    ```
+                </section>
+
+                <section data-markdown>
+                    Thus, it imposes some limitations:
+                    
+
+                    This overloading is possible:
+                    ```scala
+                        def greet(cat: Cat): Unit = {}
+                        def greet(dog: Dog): Unit = {}
+                    ```
+                    This is a compile error:
+                    ```scala
+                        def greet(cats: List[Cats]): Unit = {}
+                        def greet(dogs: List[Dogs]): Unit = {}
+                    ```
+                    Methods are overloaded based on their arguments' classes after erasure
+                </section>
+                <section data-markdown>
+                    Pattern-matching on erased types is not possible
+                    (ClassCastException at runtime or a compile error):
+                    
+                    ```scala
+                    val a: List[Dog] = List(new Dog)
+                    // a.isInstanceOf[List[Cat]] == true
+                    a match {
+                        case l: List[Dog] => l.foreach(_.bark())
+                        case l: List[Cat] => l.foreach(_.meow())
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    Implicit resolution is done before erasure:
+
+                    ```scala
+                    trait Show[T] {
+                        def show(): String
+                    }
+
+                    object Show {
+                        implicit val dogs: Show[List[Dog]] = "List of Dogs"
+                        implicit val cats: Show[List[Cats]] = "List of Cats"
+                    }
+
+                    def sh[T](list: T)(implicit show: Show[T]): String = 
+                        show.show()
+
+                    sh(List(new Cat)) // returns "List of Cats"
+                    sh(List(1, 3, 5, 7)) // implicit will not be resolved
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Type bounds
+
+                    Suppose you want to add subtyping requirements to type parameters of types and methods:
+                    
+                    (`A <: B` or `A >: B`)
+
+                    ```scala
+                    val mutableCats = mutable.ArrayBuffer[Cat]()
+                    mutableCats.addOne(new Cat)
+
+                    def greet[T <: Animal](animals: mutable.ArrayBuffer[T]) = 
+                        animals.foreach(_.greet)
+                    // bounded existential type:
+                    def greet(animals: mutable.ArrayBuffer[_ <: Animal]) = 
+                        animals.foreach(_.greet)
+                    // this does not compile:
+                    def addCat[T <: Animal](animals: mutable.ArrayBuffer[T]) =
+                        animals.addOne(new Cat)
+                    // this does:
+                    def addCat[T >: Cat](cats: mutable.ArrayBuffer[T]) =
+                        animals.addOne(new Cat)
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    trait Cell[T] {
+                      def get: T
+                      def set(v: T): Unit
+                    }
+                      
+                    trait Cell[T] {
+                      def get[O >: T]: O
+                      def set[O <: T](v: O): Unit
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    sealed trait Option[+T] {
+                      def getOrElse[B >: T](orElse: => B): B =
+                        if (isEmpty) orElse else this.get
+                    }
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Type relation evidences
+
+                    Besides type bounds, there are special types representing subtyping and type equality relations.
+
+                    ```scala
+                    sealed abstract class <:<[-From, +To] extends (From => To)
+                    sealed abstract class =:=[From, To] extends (From <:< To) {
+                        def flip: To =:= From
+                    }
+                    ```
+
+                    These types carry the subtyping relationship into the type system.
+                </section>
+                <section data-markdown>
+                    Both <:< and =:= are singleton types, and they both have only one runtime value:
+
+                    ```scala
+                    object <:< {
+                        private val singleton: =:=[Any, Any] = new (Any =:= Any) {
+                          override def apply(x: Any) = x
+                        }
+                        implicit def refl[A]: A =:= A =
+                          singleton.asInstanceOf[A =:= A]
+                      
+                        def antisymm[A, B](implicit 
+                            l: A <:< B,
+                            r: B <:< A
+                        ): A =:= B = singleton.asInstanceOf[A =:= B]
+                      }
+                    ```
+
+                    This uses generally unsafe type casting, but for this type it is provably correct.
+                </section>
+                <section data-markdown>
+                    Type evidences are used in places where using type bounds in not possible, for example in methods of generic types:
+
+                    ```scala
+                    sealed trait Option[+T] {
+                      def flatten[B](implicit ev: T <:< Option[B]): Option[B] =
+                        if (isEmpty) None else ev(this.get)
+                    }
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## More on variance
+
+                    Remember these:
+
+                    ```scala
+                        List[+A] // - Covariance
+                        Id[A]  // - Invariance
+                        Vet[-A] // - Contravariance
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Covariance
+
+                    This type of variance is often used for immutable collections and factories – interfaces which return values.
+
+                    ```scala
+                    trait RandomGenerator[+T] {
+                      def generate(): T // Return is a covariant position
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Contravariance
+
+                    It is often used for arguments in functions and consumers – interfaces which accept a value instead of returning it.
+
+                    ```scala
+                    trait Consume[-T] {
+                      def consume(v: T): Unit // compiles
+                    }
+
+                    trait Function1[-I1, +O] {
+                        def apply(v1: I1): O
+                      }
+                      trait Function2[-I1, -I2, +O] {
+                        def apply(v1: I1, v2: I2): O
+                      }
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Invariance
+
+                    Used in mutable Structures
+                    ```scala
+                        A =:= B =>
+                        mutable.List[A] =:= mutable.List[B]
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Cheat sheet
+
+                    ```scala
+                        type F1[-T] = T => Unit
+                        type F2[T] = T => T
+                        type F3[+T] = Unit => T
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Pure functions
+
+                    What are they???
+                </section>
+                <section data-markdown>
+                    Pure function has the following properties:
+
+                    * It returns identical result for identical arguments
+                    * It produces no side effects
+                </section>
+                <section data-markdown>
+                    Is this function pure?
+
+                    ```scala
+                    import scala.util.Random
+ 
+                    def increment1(x: Int): Int =
+                      x + Random.nextInt(5)
+                    ```
+                </section>
+                <section data-markdown>
+                    No, it is not. It may produce different results for the same argument:
+
+                    ```scala
+                    val x = increment1(1)  // x = 2
+                    val y = increment1(1)  // y = 3
+                     
+                    println(x == y) // false
+                    ```
+                </section>
+                <section data-markdown>
+                    Is this function pure?
+
+                    ```scala
+                    import scala.util.Random
+ 
+                    def increment2(x: Int): Int =
+                        x + (new Random(x)).nextInt(5)
+                    ```
+                </section>
+                <section data-markdown>
+                    Formally, yes. As the seed remains unchanged, each instantiation of Random will return the same value for nextInt
+                </section>
+                <section data-markdown>
+                    Okay, and is this function pure?
+                    ```scala
+                    def increment3(x: Int): Int = {
+                      println(s"Input argument: $x")
+                      x + 1
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    No, as it does not satisfy the second property (side-effect)
+                </section>
+                <section data-markdown>
+                    ## Side effect
+
+                    Modification of a state outside the scope of the function
+                    Typical example - `println("sas")`
+                </section>
+                <section data-markdown>
+                    Modification of variable outside the scope is also a side-effect
+
+                    ```scala
+                    var result = 0
+ 
+                    def increment4(x: Int): Int = {
+                      result += x
+                      x + 1
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Referential transparency
+
+                    The expression is called referentially transparent if the expression can be substituted with the result, that is being evaluated.
+                </section>
+                <section data-markdown>
+                    Think of it as of siple math equation
+
+                    (1 + 2) + (5 - 3) = 5
+
+                    To compute the equation we can substitute the braces with the result of the equation in them and the whole expression remains equivalent to the original one:
+
+                    (3) + (2) = 5
+                </section>
+                <section data-markdown>
+                    ```scala
+                    def increment5(x: Int): Int = x + 1
+ 
+                    val one = increment5(1) // increment5(1) is a referentially transparent expression
+                    val two = 2             // 2 is a result of increment5(1)
+                    
+                    println(one == two) // true
+                    
+                    val three = increment5(1) + increment5(1)
+                    val four  = one + one // substitute the results of the computations
+                    // and the result produces the same value as the parts of the equations
+                    
+                    println(three == four) // true
+                    ```
+                </section>
+                <section data-markdown>
+                    Example of something not ref transparent:
+                    ```scala
+                    def increment6(x: Int): Int = {
+                        println(x)
+                        x + 1
+                      }
+                       
+                      // stdout: 1, 1; one = 2
+                      val one = increment6(1) + increment6(1)
+                       
+                      val res = increment6(1)
+                      // stdout: 1; one = 2
+                      val two = res + res
+                    ```
+                </section>
+                <section data-markdown>
+                    The overall effect of the two calls of increment6 and result substitute with res are not the same.
+                    
+                    First expression produces two writes to standard output
+
+                    Second expression produces only one write to standard output
+                </section>
+                <section data-markdown>
+                    Why absense of side effects can be beneficial?
+
+                    Why referencially transparent code is beneficial?
+
+                    Why pure functions are beneficial?
+                </section>
+                <section data-markdown>
+                    Easy to Test
+
+                    Easy to understand. No need to know about the semantics of the whole program to reason about small part of it
+
+                    Easy to refactor code
+                </section>
+                <section data-markdown>
+                    ## Total functions
+
+                    Functions that are defined on the whole domain (inputs)
+
+                    Or in English, any input will produce a result
+                </section>
+                <section data-markdown>
+                    Is it a total function?
+                    
+                    ```scala 
+                    def multiply(x: Int): Int = x * x
+                    ```
+
+                    Is it a total function?
+
+                    ```scala
+                    def divide(x: Int, y: Int): Int = x / y
+                    ```
+                </section>
+                <section data-markdown>
+                    Why are total functions beneficial?
+
+                    No unexpected behaviours in our program (exceptions)
+
+                    If it compiles it almost certainly works
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    Traditional while loops deal with mutable state:
+
+                    ```scala
+                    var x = 0
+    
+                    while (x < 10) {
+                    println(x)
+                    x += 1
+                    }
+                    ```
+                    How to make it functional????
+                </section>
+                <section data-markdown>
+                    ## Recursion
+
+                    Let us rewrite the upper example with the recursion:
+
+                    ```scala
+                    def loop(x: Int = 0): Unit = 
+                    x match {
+                        case x if x <= 10 => 
+                        println(x)
+                        loop(x+1)
+                        case _ => ()
+                    }
+                    ```
+
+                    Or with if-statement
+
+                    ```scala
+                    def loop(x: Int = 0): Unit =
+                        if (x < 10) {
+                            println(x)
+                            loop(x + 1)
+                        }              
+                    ```
+                </section>
+                <section data-markdown>
+                    Potential problem:
+
+                    StackOverflowExceprion
+
+                    Each call to the function produces a new allocation on the stack
+
+                    If it is deep enough - it will explode
+                </section>
+                <section data-markdown>
+                    Solution - use tail recursion
+
+                    - special kind of recursion that has as its last expression either a recursive call or a constant value
+
+                    We can actually optimize them on compilation and rewrite them as while loops
+                </section>
+                <section data-markdown>
+                    Is it tail recursion ? 
+
+                    ```scala
+                    def factorial(n: Int): Int =
+                      if (n < 1) 1 else n * factorial(n - 1)
+                    ```
+                </section>
+                <section data-markdown>
+                    No, it is not. Last expression consists of multiplication and a recursive call
+                    But can we make it tail recursive?
+                </section>
+                <section data-markdown>
+                    ```scala
+                    def factorial(n: Int, acc: Int = 1): Int =
+                        if (n < 1) acc else factorial(n - 1, acc * n)
+                    ```
+
+                    We can add an internal state of the computation (accumulator) as a separate argument with default value, that is equal to initial value.
+
+                    Explicitly change the state of the computation and a pass a new value in the recursive call
+
+                    When ready, just return an accumulator
+                </section>
+                <section data-markdown>
+                    The compiler will optimize it, but some smart guy that knows better can come later and change it to be not tail recursive.
+
+                    How can we enforce that such function is specifically designed to be tail recursive?
+
+                    ```scala
+                    import scala.annotation.tailrec
+
+                    @tailrec // - use this annotation
+                    def factorial(n: Int, acc: Int = 1): Int =
+                        if (n < 1) acc else factorial(n - 1, acc * n)
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    def sum(ints: List[Int], acc: Int = 0): Int =
+                    ints match {
+                        case Nil     => acc
+                        case x :: xs => sum(xs, acc + x)
+                    }
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    Lets recall a Java-like (OOP) pattern for adding new behaviour:
+
+                    ```scala
+                    trait Comparable[T] {
+                        def compareTo(other: T): Int
+                      }
+                      
+                      class User(val username: String,
+                                 private val rank: Int) extends Comparable[User] {
+                        def compareTo(other: User): Int = this.rank - other.rank
+                      }
+                      
+                      (new User("Vasya", 1)).compareTo(new User("Petya", 2)) // -1
+                    ```
+                </section>
+                <section data-markdown>
+                    Suppose, we use some fancy library from the third party (Twitter) and we want to add our new cool necessary Comparable functionality to one of the defined classes:
+
+                    ```scala
+                    package com.twitter
+ 
+                    final class TwitterUser(val followers: Int)
+                    ```
+
+                    And we can't do it. Libraries are not modifiable. Good luck wasting your time in PR to a library argumenting why your cool feature should be included (or waiting a new stable version with your functionality)
+
+                    Can we solve this issue?
+                </section>
+                <section data-markdown>
+                    # Typeclass
+
+                    Design pattern that allows you to easily extend any closed type with new behaviour
+                </section>
+                <section data-markdown>
+                    Typeclasses are expressed through simple traits with one or more type parameters
+
+                    Actually, you already used this pattern in Assignment2
+
+                    ```scala
+                    trait Json[T] {
+                        def toJson(x: T): String
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    Implementations of the trait will be called instances of the typeclass
+                    
+                    Implementations, usually, do not have explicit constructors
+
+                    ```scala
+                        class JsonInt extends Json[Int] {
+                            def toJson(x: Int): Int = x.toString() // or something like that
+                        }
+                       
+                        class JsonString extends Json[String] {
+                            def toJson(x: String): String = x
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    And now, we can use our definitions to define polymorphic functions like general toJson:
+
+                    ```scala
+                    def toJson[A](x: A)(jsonify: Json[A]): String =
+                        jsonify.toJson(x)
+                    ```
+                </section>
+                <section data-markdown>
+                    In order to use it, we need to specify how our T is transformed to Json string:
+
+                    ```scala
+                    val list = List(1, 2, 3)
+                    val res = toJson(list)(new JsonList[Int]) // res = "[1, 2, 3]"
+                    ```
+                </section>
+                <section data-markdown>
+                    Instances of Json are unique for each type. So why bother passing them explcitly? Just pass them as explicits:
+
+                    ```scala
+                    class Json[T] {
+                        def toJson(x: T): String
+                    }
+
+                    object Json {
+                        implicit val jsonInt: Json[Int] = _.toString()
+                       
+                        implicit val jsonString: Json[String] = _
+
+                        def toJson[A](x: A)(implicit jsonify: Json[A]): String =
+                            jsonify.toJson(x)
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    Here, the actual behaviour of the toJson function is defined by the provided type T
+                    
+                    Such polymorphism is called ad-hoc
+                </section>
+                <section data-markdown>
+                    There are several common adjustments to the typeclass pattern
+
+                    First, usage of apply summon function:
+
+                    ```scala
+                        object Json {
+                            // Works identically to implicitly
+                            def apply[T](implicit
+                                jsonify: Json[T]
+                            ): Json[T] = jsonify
+                        }
+                    ```
+                </section>
+                <section data-markdown>
+                    Apply summon function can be paired with Context Bounds
+
+                    def toJson[T: Json](x: T): String =
+                        Json[T].toJson(x)
+
+                    Context bounds are usually used to not mix typeclasses with some other implicits. They show us what additional behaviour is defined for our type T.
+                </section>
+                <section data-markdown>
+                    And Context Bounds can be paired with syntax extensions:
+
+                    ```scala
+                    implicit final class JsonOps[T](private val t: T)
+                        extends AnyVal {
+                    
+                        def toJson(implicit
+                            jsonify: Json[T]
+                        ): Int = jsonify.toJson(t)
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    And now we dont have to explicitly call an instance of Typeclass:
+
+                    def toJson[T: Json](x: T): String =
+                        x.toJson
+                </section>
+                <section data-markdown>
+                    There are several usual ways to define the typeclass instances:
+
+                    In the companion object of the typeclass itself (useful for default instances)
+
+                    In the companion object of the type for which we define the instance
+                </section>
+                <section data-markdown>
+                    ```scala
+                    trait Json[T] {
+                        def toJson(a: T): String
+                      }
+                    object Json {
+                        implicit val json: Json[Int] = _.toString()
+                    }
+                       
+                    case class User(rank: Int, username: String)
+                    object User {
+                        implicit val json: Json[User] = ???
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    Both instances of Json for Int and User are in the global implicit scope
+
+                    We can use them everywhere we want (Wherever we import comparator or user)
+
+                    ```scala
+                    val one = implicitly[Comparator[Int]]
+                        .compare(1, 2) // one = -1
+                   
+                    val two = implicitly[Comparator[User]]
+                        .compare(
+                            User(1, "Vasya"),
+                            User(2, "Petya")
+                        ) // two = -1
+                        ```
+                </section>
+                <section data-markdown>
+                    If the typeclass instance is not defined in the global implicit scope, then it is called orphan
+
+                    Typical use case: define external typeclass instance for primitive types
+
+                    ```scala
+                    object model {
+                        implicit val comparatorString: SomeCoolLibraryTypeclass[String] =
+                          (a, b) => a.length - b.length
+                    }
+                    ```
+                </section>
+            </section>
+            <section>
+                <section data-markdown>
+                    ## Default typeclasses
+                </section>
+                <section data-markdown>
+                    ## Show
+
+                    Convert something to String (default behaviour toString is cringe for AnyRef)
+                </section>
+                <section data-markdown>
+                    ```scala
+                    trait Show[-T] {
+                        def show(t: T): String
+                    }
+                       
+                    object Show {
+                        implicit val showString: Show[String] = t => t
+                        implicit val showInt: Show[Int] = _.toString
+                    }
+
+                    implicit final class ShowOps[T](private val t: T)
+                        extends AnyVal {
+                    
+                        def show(implicit show: Show[T]): String =
+                            show.show(t)
+                    }
+                    
+                    val raw = 1.show
+                    ```
+                </section>
+                <section data-markdown>
+                    ## EQ
+
+                    equals as a typeclass
+                </section>
+                <section data-markdown>
+                    ```scala
+                    trait Eq[T] {
+                        def eq(a: T, b: T): Boolean
+                    }
+                       
+                    object Eq {
+                        implicit val eqInt: Eq[Int] = (a, b) => a == b
+                    }
+
+                    implicit final class EqOps[T](private val t: T)
+                    extends AnyVal {
+                   
+                        def ===(other: T)(implicit eq: Eq[T]): Boolean =
+                        eq.eq(t, other)
+                    }
+                    
+                    val res = 1 === 1 // res = true
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Semigroup
+
+                    Associative binary operation
+                </section>
+                <section data-markdown>
+                    ```scala
+                    trait Semigroup[T] {
+                        def combine(a: T, b: T): T
+                    }
+                       
+                    object Semigroup {
+                        implicit val semigroupInt: Semigroup[Int] =
+                          (a, b) => a + b
+                       
+                        implicit val semigroupString: Semigroup[String] =
+                          (a, b) => a + b
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    implicit final class SemigroupOps[T](private val t: T)
+                        extends AnyVal {
+                   
+                    def |+|(other: T)(implicit semigroup: Semigroup[T]): T =
+                        semigroup.combine(t, other)
+                    }
+                   
+                  val three = "one" |+| "two" // three = onetwo
+                    ```
+                </section>
+                <section data-markdown>
+                    Associativity Law should hold:
+
+                    ```scala
+                    def equal[T: Semigroup](a: T, b: T, c: T): Boolean =
+                        (a |+| b) |+| c == a |+| (b |+| c)
+                    ```
+                </section>
+                <section data-markdown>
+                    ## Monoid
+
+                    Better Semigroup
+
+                    ```scala
+                    trait Monoid[T] extends Semigroup[T] {
+                        def unit: T
+                        def combine(a: T, b: T): T
+                    }
+                       
+                    object Monoid {
+                        implicit val monoidInt: Monoid[Int] =
+                          new Monoid[Int] {
+                            val unit: Int = 0
+                            def combine(a: Int, b: Int): Int = a + b
+                        }
+                    }
+                    ```
+                </section>
+                <section data-markdown>
+                    ```scala
+                    def unit[T](implicit monoid: Monoid[T]): T =
+                        monoid.unit
+
+                    val res = unit[Int] |+| 2 // res = 2
+                    ```
+                </section>
+                <section data-markdown>
+                    Associativity Law (same as for Semigroup)
+                    
+                    Identity Law (left & right)
+
+                    ```scala
+                    def equalLeft[T: Monoid](a: T): Boolean =
+                        unit[T] |+| a == a
+                   
+                    def equalRight[T: Monoid](a: T): Boolean =
+                        a |+| unit[T] == a
+                    ```
+                </section>
+            </section>
+
+
+	<script src="/dist/reveal.js"></script>
+	<script src="/plugin/zoom/zoom.js"></script>
+	<script src="/plugin/notes/notes.js"></script>
+	<script src="/plugin/search/search.js"></script>
+	<script src="/plugin/markdown/markdown.js"></script>
+	<script src="/plugin/highlight/highlight.js"></script>
+	<script>
+
+		// Also available as an ES module, see:
+		// https://revealjs.com/initialization/
+		Reveal.initialize({
+			controls: true,
+			progress: true,
+			center: true,
+			hash: true,
+			minScale: 0.1,
+			maxScale: 0.9,
+
+			// Learn about plugins: https://revealjs.com/plugins/
+			plugins: [RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight]
+		});
+	</script>
+
+</body>
+
+</html>

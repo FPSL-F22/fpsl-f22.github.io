@@ -699,7 +699,8 @@
                     Let's define an implicit class with a new method toWeekDay
                     ```scala
                     implicit class IntWeekDayOps(val i: Int)
-                    extends AnyVal {
+                    extends AnyVal { // You can omit this extends
+                        // you can create your own implicit class without it.
                     
                     def toWeekDay: Option[WeekDay] =
                         WeekDay.fromInt(i)
